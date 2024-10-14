@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-
 @SpringBootApplication
 public class BiceVidaApplication {
 
@@ -21,48 +20,49 @@ public class BiceVidaApplication {
 		SpringApplication.run(BiceVidaApplication.class, args);
 		System.out.println("Examen Bice Vida");
 
-		Principal p = new Principal();
 
-		
-		p.listClientsIds();
+		Principal.listClientsIds();
 
-		System.out.println(p.listClientsIds());
-		
+		Principal.insuranceClientsByRUT();// ok junit
+
+		Principal.higherClientsBalances();// ok
+		Principal.insuranceSortedByHighestBalance();// ok
+
+		System.out.println(Principal.listClientsIdsSortedByRUT());
+		System.out.println(Principal.newClientRanking());
+		Principal.sortClientsTotalBalances();
+		Principal.clientWithLessFunds();
 	}
 
 }
 
-
 class Principal {
-	private static final List<Cliente> clients = List.of(new Cliente(1, "86620855", "DANIEL BUSTOS"),
+	private static final List<Cliente> clients = new ArrayList<>(List.of(new Cliente(1, "86620855", "DANIEL BUSTOS"),
 			new Cliente(2, "7317855K", "NICOLAS PEREZ"), new Cliente(3, "73826497", "ERNESTO GRANADO"),
 			new Cliente(4, "88587715", "JORDAN MARTINEZ"), new Cliente(5, "94020190", "ALEJANDRO ZELADA"),
-			new Cliente(6, "99804238", "DENIS ROJAS"));
-	private static final List<Cuenta> accounts = List.of(new Cuenta(6, 1, 15000), new Cuenta(1, 3, 18000),
+			new Cliente(6, "99804238", "DENIS ROJAS")));
+	private static final List<Cuenta> accounts = new ArrayList<>(List.of(new Cuenta(6, 1, 15000), new Cuenta(1, 3, 18000),
 			new Cuenta(5, 3, 135000), new Cuenta(2, 2, 5600), new Cuenta(3, 1, 23000), new Cuenta(5, 2, 15000),
 			new Cuenta(3, 3, 45900), new Cuenta(2, 3, 19000), new Cuenta(4, 3, 51000), new Cuenta(5, 1, 89000),
 			new Cuenta(1, 2, 1600), new Cuenta(5, 3, 37500), new Cuenta(6, 1, 19200), new Cuenta(2, 3, 10000),
 			new Cuenta(3, 2, 5400), new Cuenta(3, 1, 9000), new Cuenta(4, 3, 13500), new Cuenta(2, 1, 38200),
 			new Cuenta(5, 2, 17000), new Cuenta(1, 3, 1000), new Cuenta(5, 2, 600), new Cuenta(6, 1, 16200),
-			new Cuenta(2, 2, 10000));
-	private static final List<Seguro> insurances = List.of(new Seguro(1, "SEGURO APV"), new Seguro(2, "SEGURO DE VIDA"),
-			new Seguro(3, "SEGURO COMPLEMENTARIO DE SALUD"));
-	//
-	private static List<Cliente> clientes = new ArrayList<>(clients);
-	private static List<Cuenta> cuentas = new ArrayList<>(accounts);
+			new Cuenta(2, 2, 10000)));
+	private static final List<Seguro> insurances = new ArrayList<>(List.of(new Seguro(1, "SEGURO APV"),
+			new Seguro(2, "SEGURO DE VIDA"), new Seguro(3, "SEGURO COMPLEMENTARIO DE SALUD")));
 
 	// Método para listar los IDs de clientes
 	public static List<Integer> listClientsIds() {
 		// CODE HERE
 		List<Integer> ids = new ArrayList<>();
 		for (int i = 0; i < clients.size(); i++) {
-			//System.out.println("i: " + clients.get(i).toString());
 			ids.add(clients.get(i).getId());
 		}
+		System.out.println(ids);
 		return ids;
 	}
 
-	// Método para listar los IDs de clientes ordenados por RUT
+	// 2 -Método para listar los IDs de clientes ordenados por RUT
 	public static List<Integer> listClientsIdsSortedByRUT() {
 		// CODE HERE
 		return clients.stream().sorted((o1, o2) -> o1.getRut().compareTo(o2.getRut())).map(Cliente::getId)
@@ -93,7 +93,6 @@ class Principal {
 		for (Entry<Integer, Double> balanceMayor : sortBalance) {
 			for (int i = 0; i < clients.size(); i++) {
 				if (balanceMayor.getKey() == clients.get(i).getId()) {
-					// listaNombres.put(balanceMayor.getKey(), clients.get(i).getName());
 					lista.add(clients.get(i).getName());
 				}
 			}
@@ -109,9 +108,6 @@ class Principal {
 		try {
 			listaOrdenada = accounts.stream().sorted((o1, o2) -> Integer.compare(o1.getClientId(), o2.getClientId()))
 					.collect(Collectors.toList());
-
-			// return accounts.stream().sorted((o1, o2) -> Integer.compare(o1.getClientId(),
-			// o2.getClientId())).collect(Collectors.toList());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -131,20 +127,22 @@ class Principal {
 		for (Seguro seguro : insurances) {
 			List<String> ruts = accounts.stream().filter(cuenta -> cuenta.getInsuranceId() == seguro.getId())
 					.map(cuenta -> clients.stream().filter(cliente -> cliente.getId() == cuenta.getClientId())
-							.map(Cliente::getRut).findFirst().orElse(null)) // Filtra por posibles nulos
+							.map(Cliente::getRut).findFirst().orElse(null))
 					.filter(Objects::nonNull).collect(Collectors.toList());
 
 			// ordeno alfabeticamente
-			ruts.sort(Comparator.comparing(rut -> clients.stream().filter(cliente -> cliente.getRut().equals(rut))
-					.map(Cliente::getName).findFirst().orElse("")));
-			lista.put(seguro.getName(), ruts);
+			List<String> rutsOrdenados = ruts.stream().sorted(Comparator.comparing(rut -> {
+				Cliente cliente = clients.stream().filter(c -> (c.getRut().equals(rut))).findFirst().orElse(null);
+				return cliente != null ? cliente.getName() : "";
+			})).collect(Collectors.toList());
+
+			lista.put(seguro.getName(), rutsOrdenados);
 		}
 
 		for (Map.Entry<String, List<String>> x : lista.entrySet()) {
 			System.out.println(x);
 		}
-
-		return null;
+		return lista;
 	}
 
 	// Método para generar un arreglo ordenado decrecientemente con los saldos
@@ -155,21 +153,12 @@ class Principal {
 		List<Integer> balances = accounts.stream().filter(cuenta -> cuenta.getInsuranceId() == 1)
 				.filter(cuenta -> cuenta.getBalance() > 30000).map(Cuenta::getBalance).sorted(Comparator.reverseOrder())
 				.collect(Collectors.toList());
-
-		//System.out.println(balances);
-
-//		Integer[] balanceArray = balances.toArray(new Integer[0]);
-
-//		for(Integer x : balanceArray) {
-//			System.out.println(x);
-//		}
-
+		System.out.println(balances);
 		return balances;
 	}
 
 	// Método para generar un arreglo con IDs de los seguros ordenados //
 	// crecientemente por la cantidad TOTAL de dinero que administran
-
 	public static List<Integer> insuranceSortedByHighestBalance() {
 		// CODE HERE
 
@@ -177,35 +166,25 @@ class Principal {
 		Map<Integer, Integer> totalPorSeguro = accounts.stream()
 				.collect(Collectors.groupingBy(Cuenta::getInsuranceId, Collectors.summingInt(Cuenta::getBalance)));
 
-		// System.out.println(totalPorSeguro);
-
 		// ordenar por la cantidad de dinero
 		List<Map.Entry<Integer, Integer>> ordenSeguro = new ArrayList<>(totalPorSeguro.entrySet());
 		ordenSeguro.sort(Map.Entry.comparingByValue());
 
-		// System.out.println(ordenSeguro);
-
 		// obtengo los id de los seguros
 		Integer[] seguroIdArray = ordenSeguro.stream().map(Map.Entry::getKey).toArray(Integer[]::new);
 
-		// imprimo los id de los seguros
-//		for(Integer x : seguroIdArray) {
-//			System.out.println(x);
-//		}
 		return Arrays.asList(seguroIdArray);
 	}
 
 	// Método para generar un objeto en que las claves sean los nombres de los //
 	// Seguros y los valores el número de clientes que solo tengan cuentas en ese
 	// seguro
-
 	public static Map<String, Long> uniqueInsurance() {
 		// CODE HERE
 		Map<String, Long> clienteMap = new HashMap<>();
 
 		// recorro seguro
 		for (Seguro seguro : insurances) {
-			// System.out.println(seguro);
 			int contador = (int) clients.stream().filter(cliente -> {
 				// obtengo cuentas por cliente
 				List<Cuenta> cuentaCliente = accounts.stream().filter(cuenta -> cuenta.getClientId() == cliente.getId())
@@ -216,16 +195,11 @@ class Principal {
 			clienteMap.put(seguro.getName(), Long.parseLong(String.valueOf(contador)));
 		}
 
-//		for (Entry<String, Long> x : clienteMap.entrySet()) {
-//			System.out.println(x);
-//		}
-
 		return clienteMap;
 	}
 
 	// Método para generar un objeto en que las claves sean los nombres de los //
 	// Seguros y los valores el ID de su cliente con menos fondos
-
 	public static Map<String, Integer> clientWithLessFunds() {
 		// CODE HERE
 
@@ -256,9 +230,7 @@ class Principal {
 			}
 		}
 
-		
-			//System.out.println(clienteMenosFondos);
-		
+		System.out.println(clienteMenosFondos);
 
 		return clienteMenosFondos;
 	}
@@ -269,29 +241,21 @@ class Principal {
 	// ranking de la pregunta 2
 	public static int newClientRanking() {
 		// CODE HERE }
-		
-		//clienteOriginal probar 
-		
+
 		String rut = "123";
 		String nombre = "nombre";
-		Cliente nuevoCli = new Cliente(clientes.size()+1, "12" , "fff");
-		clientes.add(nuevoCli);
-		
-		int seguroId = 3;//id de: SEGURO COMPLEMENTARIO DE SALUD
-		cuentas.add(new Cuenta(nuevoCli.getId(), seguroId, 15000));
-		
-		//pbtengo rut ordenados
-		List<Integer> idsOrdenados = clientes.stream()
-				.sorted(Comparator.comparing(Cliente::getRut))
-				.map(Cliente::getId)
-				.collect(Collectors.toList());
-		
-//		for(Integer x : idsOrdenados) {
-//			System.out.println(x);
-//		}
-//		
-		
-		return idsOrdenados.indexOf(nuevoCli.getId())+1;
+		Cliente nuevoCli = new Cliente(clients.size() + 1, rut, nombre);
+		clients.add(nuevoCli);
+
+		int seguroId = 3;// id de: SEGURO COMPLEMENTARIO DE SALUD
+		Cuenta nuevacuenta = new Cuenta(nuevoCli.getId(), seguroId, 15000);
+		accounts.add(nuevacuenta);
+
+		// pbtengo rut ordenados
+		List<Integer> idsOrdenados = listClientsIdsSortedByRUT();
+
+		int x = idsOrdenados.indexOf(nuevoCli.getId());
+		return x;
 	}
 
 }
@@ -423,4 +387,3 @@ class Seguro {
 	}
 
 }
-
