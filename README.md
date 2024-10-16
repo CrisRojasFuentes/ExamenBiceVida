@@ -7,3 +7,4 @@ Buen día.
 Actualización
 
 para la ejecución del proyecto se puede importar y ejecutar: click derecho en proyecto, Run As y presionar en Spring Boot App.
+para la ejecucion de los test por consola se debe estar ubicado en el pom.xml y ejecutar mvn test 
